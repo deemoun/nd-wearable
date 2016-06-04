@@ -29,11 +29,28 @@ import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.support.annotation.NonNull;
 import android.support.wearable.watchface.CanvasWatchFaceService;
 import android.support.wearable.watchface.WatchFaceStyle;
 import android.text.format.Time;
+import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.WindowInsets;
+
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.common.api.ResultCallbacks;
+import com.google.android.gms.common.api.Status;
+import com.google.android.gms.common.server.converter.StringToIntConverter;
+import com.google.android.gms.wearable.DataApi;
+import com.google.android.gms.wearable.DataEvent;
+import com.google.android.gms.wearable.DataEventBuffer;
+import com.google.android.gms.wearable.DataItem;
+import com.google.android.gms.wearable.DataItemBuffer;
+import com.google.android.gms.wearable.DataMap;
+import com.google.android.gms.wearable.DataMapItem;
+import com.google.android.gms.wearable.Wearable;
 
 import java.lang.ref.WeakReference;
 import java.util.TimeZone;
@@ -57,6 +74,10 @@ public class MyWatchFace extends CanvasWatchFaceService {
      * Handler message id for updating the time periodically in interactive mode.
      */
     private static final int MSG_UPDATE_TIME = 0;
+    private String TAG = "WatchFaceReceiver";
+    private String lowTemperature;
+    private String highTemperature;
+
 
     @Override
     public Engine onCreateEngine() {
@@ -83,8 +104,12 @@ public class MyWatchFace extends CanvasWatchFaceService {
         }
     }
 
-    private class Engine extends CanvasWatchFaceService.Engine {
+    private class Engine extends CanvasWatchFaceService.Engine
+            implements
+            GoogleApiClient.ConnectionCallbacks,
+            GoogleApiClient.OnConnectionFailedListener {
         final Handler mUpdateTimeHandler = new EngineHandler(this);
+        private GoogleApiClient googleApiClient;
         boolean mRegisteredTimeZoneReceiver = false;
         Paint mBackgroundPaint;
         Paint mTextPaint;
@@ -112,6 +137,12 @@ public class MyWatchFace extends CanvasWatchFaceService {
         public void onCreate(SurfaceHolder holder) {
             super.onCreate(holder);
 
+            googleApiClient = new GoogleApiClient.Builder(MyWatchFace.this)
+                    .addApi(Wearable.API)
+                    .addConnectionCallbacks(this)
+                    .addOnConnectionFailedListener(this)
+                    .build();
+
             setWatchFaceStyle(new WatchFaceStyle.Builder(MyWatchFace.this)
                     .setCardPeekMode(WatchFaceStyle.PEEK_MODE_VARIABLE)
                     .setBackgroundVisibility(WatchFaceStyle.BACKGROUND_VISIBILITY_INTERRUPTIVE)
@@ -130,10 +161,75 @@ public class MyWatchFace extends CanvasWatchFaceService {
             mTime = new Time();
         }
 
+        private void releaseGoogleApiClient(){
+            if(googleApiClient != null && googleApiClient.isConnected()) {
+                googleApiClient.disconnect();
+            }
+        }
+
+        @Override
+        public void onConnected(Bundle bundle) {
+            Log.d(TAG, "connected GoogleAPI");
+            Wearable.DataApi.addListener(googleApiClient,onDataChangedListener);
+            Wearable.DataApi.getDataItems(googleApiClient).setResultCallback(onConnectionResultCallback);
+        }
+
+        private final DataApi.DataListener onDataChangedListener = new DataApi.DataListener(){
+            @Override
+            public void onDataChanged(DataEventBuffer dataEvents){
+                for (DataEvent event : dataEvents){
+                    if(event.getType() == DataEvent.TYPE_CHANGED){
+                        DataItem item = event.getDataItem();
+                        processConfigurationFor(item);
+                    }
+                }
+                dataEvents.release();
+                if (isVisible() && !isInAmbientMode()) {
+                    invalidate();
+                }
+            }
+        };
+
+        private void processConfigurationFor(DataItem item) {
+            if("/watch_face_request".equals(item.getUri().getPath())) {
+                DataMap dataMap = DataMapItem.fromDataItem(item).getDataMap();
+                if(dataMap.containsKey("WEARABLE_MESSAGE")) {
+                    String receivedMessage = dataMap.getString("WEARABLE_MESSAGE");
+                    Log.v(TAG, "Message received from mobile: " + receivedMessage);
+                }
+            }
+        }
+
+        private final ResultCallback<DataItemBuffer> onConnectionResultCallback = new ResultCallback<DataItemBuffer>(){
+          @Override
+            public void onResult(DataItemBuffer dataItems) {
+              for(DataItem item : dataItems){
+                  processConfigurationFor(item);
+              }
+              dataItems.release();
+              if (isVisible() && !isInAmbientMode()) {
+                  invalidate();
+              }
+          }
+        };
+
+
+
         @Override
         public void onDestroy() {
             mUpdateTimeHandler.removeMessages(MSG_UPDATE_TIME);
+            releaseGoogleApiClient();
             super.onDestroy();
+        }
+
+        @Override
+        public void onConnectionSuspended(int i) {
+            Log.e(TAG, "suspended GoogleAPI");
+        }
+
+        @Override
+        public void onConnectionFailed(ConnectionResult connectionResult) {
+            Log.e(TAG, "connectionFailed GoogleAPI");
         }
 
         private Paint createTextPaint(int textColor) {
@@ -150,11 +246,13 @@ public class MyWatchFace extends CanvasWatchFaceService {
 
             if (visible) {
                 registerReceiver();
+                googleApiClient.connect();
 
                 // Update time zone in case it changed while we weren't visible.
                 mTime.clear(TimeZone.getDefault().getID());
                 mTime.setToNow();
             } else {
+                releaseGoogleApiClient();
                 unregisterReceiver();
             }
 
