@@ -23,10 +23,9 @@ import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-import android.support.annotation.NonNull;
+import android.provider.Settings;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.ActivityOptionsCompat;
-import android.support.v4.app.FragmentActivity;
 import android.support.v4.util.Pair;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -37,25 +36,14 @@ import android.view.View;
 
 import com.example.android.sunshine.app.data.WeatherContract;
 import com.example.android.sunshine.app.data.WeatherDbHelper;
-import com.example.android.sunshine.app.data.WeatherProvider;
 import com.example.android.sunshine.app.gcm.RegistrationIntentService;
 import com.example.android.sunshine.app.sync.SunshineSyncAdapter;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
-import com.google.android.gms.common.api.Api;
 import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.common.api.PendingResult;
-import com.google.android.gms.common.api.Status;
-import com.google.android.gms.wearable.MessageApi;
-import com.google.android.gms.wearable.Node;
-import com.google.android.gms.wearable.NodeApi;
 import com.google.android.gms.wearable.PutDataMapRequest;
 import com.google.android.gms.wearable.PutDataRequest;
 import com.google.android.gms.wearable.Wearable;
-
-import java.io.FileDescriptor;
-import java.io.PrintWriter;
-import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends AppCompatActivity
         implements
@@ -86,8 +74,6 @@ public class MainActivity extends AppCompatActivity
                 .build();
 
         setContentView(R.layout.activity_main);
-
-        getWeatherData();
 
         Toolbar toolbar = (Toolbar)findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -152,7 +138,7 @@ public class MainActivity extends AppCompatActivity
     }
 
 
-    private void getWeatherData(){
+    private String getDbData(String dbOption){
         Cursor mCursor;
 
         WeatherDbHelper mOpenHelper = new WeatherDbHelper(getApplicationContext());
@@ -160,15 +146,17 @@ public class MainActivity extends AppCompatActivity
         SQLiteDatabase db = mOpenHelper.getReadableDatabase();
         String selectQuery = "SELECT * FROM " + WeatherContract.WeatherEntry.TABLE_NAME + " LIMIT 1";
         mCursor = db.rawQuery(selectQuery, null);
+        String weather = "";
 
         if (mCursor.getCount() > 0) {
             mCursor.moveToFirst();
         } try {
             do {
-                String weatherMax = mCursor.getString(mCursor.getColumnIndex(WeatherContract.WeatherEntry.COLUMN_MAX_TEMP));
-                String weatherMin = mCursor.getString(mCursor.getColumnIndex(WeatherContract.WeatherEntry.COLUMN_MIN_TEMP));
-                Log.v("WEATHER MAX", weatherMax);
-                Log.v("WEATHER MIN", weatherMin);
+                if (dbOption.equals("max")) {
+                    weather = mCursor.getString(mCursor.getColumnIndex(WeatherContract.WeatherEntry.COLUMN_MAX_TEMP));
+                } else if (dbOption.equals("min")) {
+                    weather = mCursor.getString(mCursor.getColumnIndex(WeatherContract.WeatherEntry.COLUMN_MIN_TEMP));
+                }
             } while (mCursor.moveToNext());
         } catch (CursorIndexOutOfBoundsException e){
             Log.v(TAG, e.getLocalizedMessage());
@@ -176,14 +164,47 @@ public class MainActivity extends AppCompatActivity
             if(!mCursor.isClosed())
                 mCursor.close();
         }
+        Log.v(TAG, weather);
+        return weather;
     }
+
+    private Double getDbData(){
+        Cursor mCursor;
+
+        WeatherDbHelper mOpenHelper = new WeatherDbHelper(getApplicationContext());
+
+        SQLiteDatabase db = mOpenHelper.getReadableDatabase();
+        String selectQuery = "SELECT * FROM " + WeatherContract.WeatherEntry.TABLE_NAME + " LIMIT 1";
+        mCursor = db.rawQuery(selectQuery, null);
+        Double weather = 0.00;
+
+        if (mCursor.getCount() > 0) {
+            mCursor.moveToFirst();
+        } try {
+            do {
+                    weather = mCursor.getDouble(mCursor.getColumnIndex(WeatherContract.WeatherEntry.COLUMN_WEATHER_ID));
+            } while (mCursor.moveToNext());
+        } catch (CursorIndexOutOfBoundsException e){
+            Log.v(TAG, e.getLocalizedMessage());
+        } finally {
+            if(!mCursor.isClosed())
+                mCursor.close();
+        }
+        return weather;
+    }
+
 
     @Override
     public void onConnected(Bundle bundle){
         Log.d(TAG,"onConnected");
-        String message = "Mobile text!";
+        String maxWeather = getDbData("max");
+        String minWeather = getDbData("min");
+        Double weatherStatus = getDbData();
+        Log.v(TAG, "WEATHER STATUS ID " + weatherStatus.toString());
         PutDataMapRequest putDataMapRequest = PutDataMapRequest.create("/watch_face_request");
-        putDataMapRequest.getDataMap().putString("WEARABLE_MESSAGE", message);
+        putDataMapRequest.getDataMap().putString("MAX_WEATHER", maxWeather);
+        putDataMapRequest.getDataMap().putString("MIN_WEATHER", minWeather);
+        putDataMapRequest.getDataMap().putDouble("STATUS", weatherStatus);
         PutDataRequest putDataRequest = putDataMapRequest.asPutDataRequest();
         Wearable.DataApi.putDataItem(googleApiClient, putDataRequest);
     }

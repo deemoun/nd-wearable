@@ -29,7 +29,6 @@ import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.support.annotation.NonNull;
 import android.support.wearable.watchface.CanvasWatchFaceService;
 import android.support.wearable.watchface.WatchFaceStyle;
 import android.text.format.Time;
@@ -40,9 +39,6 @@ import android.view.WindowInsets;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.ResultCallback;
-import com.google.android.gms.common.api.ResultCallbacks;
-import com.google.android.gms.common.api.Status;
-import com.google.android.gms.common.server.converter.StringToIntConverter;
 import com.google.android.gms.wearable.DataApi;
 import com.google.android.gms.wearable.DataEvent;
 import com.google.android.gms.wearable.DataEventBuffer;
@@ -75,9 +71,9 @@ public class MyWatchFace extends CanvasWatchFaceService {
      */
     private static final int MSG_UPDATE_TIME = 0;
     private String TAG = "WatchFaceReceiver";
-    private String lowTemperature;
-    private String highTemperature;
-    public String receivedMessage;
+    public String maxWeather;
+    public String minWeather;
+    public Double weatherStatus;
 
 
     @Override
@@ -114,7 +110,8 @@ public class MyWatchFace extends CanvasWatchFaceService {
         boolean mRegisteredTimeZoneReceiver = false;
         Paint mBackgroundPaint;
         Paint mTextPaint;
-        Paint mWeatherPaint;
+        Paint mMaxWeatherPaint;
+        Paint mMinWeatherPaint;
         boolean mAmbient;
         Time mTime;
         final BroadcastReceiver mTimeZoneReceiver = new BroadcastReceiver() {
@@ -160,8 +157,11 @@ public class MyWatchFace extends CanvasWatchFaceService {
             mTextPaint = new Paint();
             mTextPaint = createTextPaint(resources.getColor(R.color.digital_text));
 
-            mWeatherPaint = new Paint();
-            mWeatherPaint = createTextPaint(resources.getColor(R.color.digital_text));
+            mMaxWeatherPaint = new Paint();
+            mMaxWeatherPaint = createTextPaint(resources.getColor(R.color.digital_text));
+
+            mMinWeatherPaint = new Paint();
+            mMinWeatherPaint = createTextPaint(resources.getColor(R.color.digital_text));
 
             mTime = new Time();
         }
@@ -198,9 +198,11 @@ public class MyWatchFace extends CanvasWatchFaceService {
         private void processConfigurationFor(DataItem item) {
             if("/watch_face_request".equals(item.getUri().getPath())) {
                 DataMap dataMap = DataMapItem.fromDataItem(item).getDataMap();
-                if(dataMap.containsKey("WEARABLE_MESSAGE")) {
-                    receivedMessage = dataMap.getString("WEARABLE_MESSAGE");
-                    Log.v(TAG, "Message received from mobile: " + receivedMessage);
+                // If we have max and min temp data from mobile, get those values
+                if (!dataMap.isEmpty()){
+                    maxWeather = dataMap.getString("MAX_WEATHER");
+                    minWeather = dataMap.getString("MIN_WEATHER");
+                    weatherStatus = dataMap.getDouble("STATUS");
                 }
             }
         }
@@ -299,7 +301,8 @@ public class MyWatchFace extends CanvasWatchFaceService {
                     ? R.dimen.digital_weather_size_round : R.dimen.digital_weather_size);
 
             mTextPaint.setTextSize(timeSize);
-            mWeatherPaint.setTextSize(weatherSize);
+            mMaxWeatherPaint.setTextSize(weatherSize);
+            mMinWeatherPaint.setTextSize(weatherSize);
         }
 
         @Override
@@ -321,7 +324,8 @@ public class MyWatchFace extends CanvasWatchFaceService {
                 mAmbient = inAmbientMode;
                 if (mLowBitAmbient) {
                     mTextPaint.setAntiAlias(!inAmbientMode);
-                    mWeatherPaint.setAntiAlias(!inAmbientMode);
+                    mMaxWeatherPaint.setAntiAlias(!inAmbientMode);
+                    mMinWeatherPaint.setAntiAlias(!inAmbientMode);
                 }
                 invalidate();
             }
@@ -370,10 +374,15 @@ public class MyWatchFace extends CanvasWatchFaceService {
                     ? String.format("%d:%02d", mTime.hour, mTime.minute)
                     : String.format("%d:%02d:%02d", mTime.hour, mTime.minute, mTime.second);
             canvas.drawText(text, mXOffset, mYOffset, mTextPaint);
-            if(receivedMessage != null) {
-                canvas.drawText(receivedMessage, mXOffset + 50, mYOffset + 50, mWeatherPaint);
+            if(maxWeather != null) {
+                canvas.drawText("Max: " + maxWeather, mXOffset + 50, mYOffset + 50, mMaxWeatherPaint);
             } else {
-                canvas.drawText("Loading...", mXOffset + 50, mYOffset + 50, mWeatherPaint);
+                canvas.drawText("Loading...", mXOffset + 50, mYOffset + 50, mMaxWeatherPaint);
+            }
+            if(minWeather != null){
+                canvas.drawText("Min: " + minWeather, mXOffset + 50, mYOffset + 80, mMinWeatherPaint);
+            } else {
+                Log.v(TAG, "MinWeather is loading");
             }
         }
 
