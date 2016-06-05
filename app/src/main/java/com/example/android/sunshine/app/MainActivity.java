@@ -17,6 +17,9 @@ package com.example.android.sunshine.app;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.database.Cursor;
+import android.database.CursorIndexOutOfBoundsException;
+import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
@@ -33,6 +36,8 @@ import android.view.MenuItem;
 import android.view.View;
 
 import com.example.android.sunshine.app.data.WeatherContract;
+import com.example.android.sunshine.app.data.WeatherDbHelper;
+import com.example.android.sunshine.app.data.WeatherProvider;
 import com.example.android.sunshine.app.gcm.RegistrationIntentService;
 import com.example.android.sunshine.app.sync.SunshineSyncAdapter;
 import com.google.android.gms.common.ConnectionResult;
@@ -81,6 +86,8 @@ public class MainActivity extends AppCompatActivity
                 .build();
 
         setContentView(R.layout.activity_main);
+
+        getWeatherData();
 
         Toolbar toolbar = (Toolbar)findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -144,10 +151,37 @@ public class MainActivity extends AppCompatActivity
         googleApiClient.connect();
     }
 
+
+    private void getWeatherData(){
+        Cursor mCursor;
+
+        WeatherDbHelper mOpenHelper = new WeatherDbHelper(getApplicationContext());
+
+        SQLiteDatabase db = mOpenHelper.getReadableDatabase();
+        String selectQuery = "SELECT * FROM " + WeatherContract.WeatherEntry.TABLE_NAME + " LIMIT 1";
+        mCursor = db.rawQuery(selectQuery, null);
+
+        if (mCursor.getCount() > 0) {
+            mCursor.moveToFirst();
+        } try {
+            do {
+                String weatherMax = mCursor.getString(mCursor.getColumnIndex(WeatherContract.WeatherEntry.COLUMN_MAX_TEMP));
+                String weatherMin = mCursor.getString(mCursor.getColumnIndex(WeatherContract.WeatherEntry.COLUMN_MIN_TEMP));
+                Log.v("WEATHER MAX", weatherMax);
+                Log.v("WEATHER MIN", weatherMin);
+            } while (mCursor.moveToNext());
+        } catch (CursorIndexOutOfBoundsException e){
+            Log.v(TAG, e.getLocalizedMessage());
+        } finally {
+            if(!mCursor.isClosed())
+                mCursor.close();
+        }
+    }
+
     @Override
     public void onConnected(Bundle bundle){
         Log.d(TAG,"onConnected");
-        String message = "Hello Wearable DataLayer!";
+        String message = "Mobile text!";
         PutDataMapRequest putDataMapRequest = PutDataMapRequest.create("/watch_face_request");
         putDataMapRequest.getDataMap().putString("WEARABLE_MESSAGE", message);
         PutDataRequest putDataRequest = putDataMapRequest.asPutDataRequest();

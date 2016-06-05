@@ -77,6 +77,7 @@ public class MyWatchFace extends CanvasWatchFaceService {
     private String TAG = "WatchFaceReceiver";
     private String lowTemperature;
     private String highTemperature;
+    public String receivedMessage;
 
 
     @Override
@@ -113,6 +114,7 @@ public class MyWatchFace extends CanvasWatchFaceService {
         boolean mRegisteredTimeZoneReceiver = false;
         Paint mBackgroundPaint;
         Paint mTextPaint;
+        Paint mWeatherPaint;
         boolean mAmbient;
         Time mTime;
         final BroadcastReceiver mTimeZoneReceiver = new BroadcastReceiver() {
@@ -158,6 +160,9 @@ public class MyWatchFace extends CanvasWatchFaceService {
             mTextPaint = new Paint();
             mTextPaint = createTextPaint(resources.getColor(R.color.digital_text));
 
+            mWeatherPaint = new Paint();
+            mWeatherPaint = createTextPaint(resources.getColor(R.color.digital_text));
+
             mTime = new Time();
         }
 
@@ -194,7 +199,7 @@ public class MyWatchFace extends CanvasWatchFaceService {
             if("/watch_face_request".equals(item.getUri().getPath())) {
                 DataMap dataMap = DataMapItem.fromDataItem(item).getDataMap();
                 if(dataMap.containsKey("WEARABLE_MESSAGE")) {
-                    String receivedMessage = dataMap.getString("WEARABLE_MESSAGE");
+                    receivedMessage = dataMap.getString("WEARABLE_MESSAGE");
                     Log.v(TAG, "Message received from mobile: " + receivedMessage);
                 }
             }
@@ -287,10 +292,14 @@ public class MyWatchFace extends CanvasWatchFaceService {
             boolean isRound = insets.isRound();
             mXOffset = resources.getDimension(isRound
                     ? R.dimen.digital_x_offset_round : R.dimen.digital_x_offset);
-            float textSize = resources.getDimension(isRound
+            float timeSize = resources.getDimension(isRound
                     ? R.dimen.digital_text_size_round : R.dimen.digital_text_size);
 
-            mTextPaint.setTextSize(textSize);
+            float weatherSize = resources.getDimension(isRound
+                    ? R.dimen.digital_weather_size_round : R.dimen.digital_weather_size);
+
+            mTextPaint.setTextSize(timeSize);
+            mWeatherPaint.setTextSize(weatherSize);
         }
 
         @Override
@@ -312,6 +321,7 @@ public class MyWatchFace extends CanvasWatchFaceService {
                 mAmbient = inAmbientMode;
                 if (mLowBitAmbient) {
                     mTextPaint.setAntiAlias(!inAmbientMode);
+                    mWeatherPaint.setAntiAlias(!inAmbientMode);
                 }
                 invalidate();
             }
@@ -360,6 +370,11 @@ public class MyWatchFace extends CanvasWatchFaceService {
                     ? String.format("%d:%02d", mTime.hour, mTime.minute)
                     : String.format("%d:%02d:%02d", mTime.hour, mTime.minute, mTime.second);
             canvas.drawText(text, mXOffset, mYOffset, mTextPaint);
+            if(receivedMessage != null) {
+                canvas.drawText(receivedMessage, mXOffset + 50, mYOffset + 50, mWeatherPaint);
+            } else {
+                canvas.drawText("Loading...", mXOffset + 50, mYOffset + 50, mWeatherPaint);
+            }
         }
 
         /**
