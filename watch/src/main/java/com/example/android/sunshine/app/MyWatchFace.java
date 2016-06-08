@@ -21,6 +21,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Resources;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -361,11 +363,42 @@ public class MyWatchFace extends CanvasWatchFaceService {
 
         @Override
         public void onDraw(Canvas canvas, Rect bounds) {
+
+            Bitmap weatherIcon;
+
             // Draw the background.
+
             if (isInAmbientMode()) {
                 canvas.drawColor(Color.BLACK);
             } else {
                 canvas.drawRect(0, 0, bounds.width(), bounds.height(), mBackgroundPaint);
+            }
+
+
+            if (weatherStatus >= 200 && weatherStatus <= 232) {
+                weatherIcon = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.ic_storm);
+            } else if (weatherStatus >= 300 && weatherStatus <= 321) {
+                weatherIcon = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.ic_light_rain);
+            } else if (weatherStatus >= 500 && weatherStatus <= 504) {
+                weatherIcon = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.ic_rain);
+            } else if (weatherStatus == 511) {
+                weatherIcon = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.ic_snow);
+            } else if (weatherStatus >= 520 && weatherStatus <= 531) {
+                weatherIcon = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.ic_rain);
+            } else if (weatherStatus >= 600 && weatherStatus <= 622) {
+                weatherIcon = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.ic_snow);
+            } else if (weatherStatus >= 701 && weatherStatus <= 761) {
+                weatherIcon = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.ic_fog);
+            } else if (weatherStatus == 761 || weatherStatus == 781) {
+                weatherIcon = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.ic_storm);
+            } else if (weatherStatus == 800) {
+                weatherIcon = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.ic_clear);
+            } else if (weatherStatus == 801) {
+                weatherIcon = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.ic_light_clouds);
+            } else if (weatherStatus >= 802 && weatherStatus <= 804) {
+                weatherIcon = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.ic_cloudy);
+            } else {
+                weatherIcon = null;
             }
 
             // Draw H:MM in ambient mode or H:MM:SS in interactive mode.
@@ -381,8 +414,9 @@ public class MyWatchFace extends CanvasWatchFaceService {
             }
             if(minWeather != null){
                 canvas.drawText("Min: " + minWeather, mXOffset + 50, mYOffset + 80, mMinWeatherPaint);
+                canvas.drawBitmap(weatherIcon, mXOffset + 50, mYOffset + 80, mMinWeatherPaint);
             } else {
-                Log.v(TAG, "MinWeather is loading");
+                Log.v(TAG, "Min Weather is loading");
             }
         }
 
