@@ -365,6 +365,7 @@ public class MyWatchFace extends CanvasWatchFaceService {
         public void onDraw(Canvas canvas, Rect bounds) {
 
             Bitmap weatherIcon;
+            weatherIcon = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.ic_full_sad);
 
             // Draw the background.
 
@@ -374,31 +375,35 @@ public class MyWatchFace extends CanvasWatchFaceService {
                 canvas.drawRect(0, 0, bounds.width(), bounds.height(), mBackgroundPaint);
             }
 
+            if(weatherStatus != null) {
 
-            if (weatherStatus >= 200 && weatherStatus <= 232) {
-                weatherIcon = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.ic_storm);
-            } else if (weatherStatus >= 300 && weatherStatus <= 321) {
-                weatherIcon = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.ic_light_rain);
-            } else if (weatherStatus >= 500 && weatherStatus <= 504) {
-                weatherIcon = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.ic_rain);
-            } else if (weatherStatus == 511) {
-                weatherIcon = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.ic_snow);
-            } else if (weatherStatus >= 520 && weatherStatus <= 531) {
-                weatherIcon = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.ic_rain);
-            } else if (weatherStatus >= 600 && weatherStatus <= 622) {
-                weatherIcon = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.ic_snow);
-            } else if (weatherStatus >= 701 && weatherStatus <= 761) {
-                weatherIcon = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.ic_fog);
-            } else if (weatherStatus == 761 || weatherStatus == 781) {
-                weatherIcon = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.ic_storm);
-            } else if (weatherStatus == 800) {
-                weatherIcon = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.ic_clear);
-            } else if (weatherStatus == 801) {
-                weatherIcon = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.ic_light_clouds);
-            } else if (weatherStatus >= 802 && weatherStatus <= 804) {
-                weatherIcon = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.ic_cloudy);
+                if (weatherStatus >= 200 && weatherStatus <= 232) {
+                    weatherIcon = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.ic_storm);
+                } else if (weatherStatus >= 300 && weatherStatus <= 321) {
+                    weatherIcon = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.ic_light_rain);
+                } else if (weatherStatus >= 500 && weatherStatus <= 504) {
+                    weatherIcon = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.ic_rain);
+                } else if (weatherStatus == 511) {
+                    weatherIcon = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.ic_snow);
+                } else if (weatherStatus >= 520 && weatherStatus <= 531) {
+                    weatherIcon = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.ic_rain);
+                } else if (weatherStatus >= 600 && weatherStatus <= 622) {
+                    weatherIcon = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.ic_snow);
+                } else if (weatherStatus >= 701 && weatherStatus <= 761) {
+                    weatherIcon = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.ic_fog);
+                } else if (weatherStatus == 761 || weatherStatus == 781) {
+                    weatherIcon = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.ic_storm);
+                } else if (weatherStatus == 800) {
+                    weatherIcon = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.ic_clear);
+                } else if (weatherStatus == 801) {
+                    weatherIcon = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.ic_light_clouds);
+                } else if (weatherStatus >= 802 && weatherStatus <= 804) {
+                    weatherIcon = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.ic_cloudy);
+                } else {
+                    weatherIcon = null;
+                }
             } else {
-                weatherIcon = null;
+                Log.v(TAG, "weatherStatus is null");
             }
 
             // Draw H:MM in ambient mode or H:MM:SS in interactive mode.
