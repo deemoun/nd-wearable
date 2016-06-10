@@ -51,6 +51,8 @@ import com.google.android.gms.wearable.DataMapItem;
 import com.google.android.gms.wearable.Wearable;
 
 import java.lang.ref.WeakReference;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
@@ -114,6 +116,7 @@ public class MyWatchFace extends CanvasWatchFaceService {
         Paint mTextPaint;
         Paint mMaxWeatherPaint;
         Paint mMinWeatherPaint;
+        Paint mWeatherIcon;
         boolean mAmbient;
         Time mTime;
         final BroadcastReceiver mTimeZoneReceiver = new BroadcastReceiver() {
@@ -165,6 +168,11 @@ public class MyWatchFace extends CanvasWatchFaceService {
             mMinWeatherPaint = new Paint();
             mMinWeatherPaint = createTextPaint(resources.getColor(R.color.digital_text));
 
+            mWeatherIcon = new Paint();
+            mWeatherIcon.setColor(resources.getColor(R.color.white));
+
+
+
             mTime = new Time();
         }
 
@@ -205,6 +213,8 @@ public class MyWatchFace extends CanvasWatchFaceService {
                     maxWeather = dataMap.getString("MAX_WEATHER");
                     minWeather = dataMap.getString("MIN_WEATHER");
                     weatherStatus = dataMap.getDouble("STATUS");
+                } else {
+                    Log.v(TAG, "No data from mobile");
                 }
             }
         }
@@ -238,13 +248,13 @@ public class MyWatchFace extends CanvasWatchFaceService {
 
         @Override
         public void onConnectionFailed(ConnectionResult connectionResult) {
-            Log.e(TAG, "connectionFailed GoogleAPI");
+            Log.e(TAG, "connectionFailed GoogleAPI: " + connectionResult.getErrorMessage());
         }
 
         private Paint createTextPaint(int textColor) {
             Paint paint = new Paint();
             paint.setColor(textColor);
-            paint.setTypeface(NORMAL_TYPEFACE);
+            paint.setTypeface(Typeface.SERIF);
             paint.setAntiAlias(true);
             return paint;
         }
@@ -361,11 +371,22 @@ public class MyWatchFace extends CanvasWatchFaceService {
             invalidate();
         }
 
+        private Bitmap decodeRes(int resource){
+            return BitmapFactory.decodeResource(getApplicationContext().getResources(), resource);
+        }
+
+//        private String roundDouble(){
+//
+//        }
         @Override
         public void onDraw(Canvas canvas, Rect bounds) {
 
             Bitmap weatherIcon;
-            weatherIcon = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.ic_full_sad);
+
+            // Setting up the default icon
+
+            weatherIcon = decodeRes(R.drawable.ic_full_sad);
+
 
             // Draw the background.
 
@@ -376,29 +397,28 @@ public class MyWatchFace extends CanvasWatchFaceService {
             }
 
             if(weatherStatus != null) {
-
                 if (weatherStatus >= 200 && weatherStatus <= 232) {
-                    weatherIcon = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.ic_storm);
+                    weatherIcon = decodeRes(R.drawable.ic_storm);
                 } else if (weatherStatus >= 300 && weatherStatus <= 321) {
-                    weatherIcon = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.ic_light_rain);
+                    weatherIcon = decodeRes(R.drawable.ic_light_rain);
                 } else if (weatherStatus >= 500 && weatherStatus <= 504) {
-                    weatherIcon = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.ic_rain);
+                    weatherIcon = decodeRes(R.drawable.ic_rain);
                 } else if (weatherStatus == 511) {
-                    weatherIcon = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.ic_snow);
+                    weatherIcon = decodeRes(R.drawable.ic_snow);
                 } else if (weatherStatus >= 520 && weatherStatus <= 531) {
-                    weatherIcon = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.ic_rain);
+                    weatherIcon = decodeRes(R.drawable.ic_rain);
                 } else if (weatherStatus >= 600 && weatherStatus <= 622) {
-                    weatherIcon = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.ic_snow);
+                    weatherIcon = decodeRes(R.drawable.ic_snow);
                 } else if (weatherStatus >= 701 && weatherStatus <= 761) {
-                    weatherIcon = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.ic_fog);
+                    weatherIcon = decodeRes(R.drawable.ic_fog);
                 } else if (weatherStatus == 761 || weatherStatus == 781) {
-                    weatherIcon = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.ic_storm);
+                    weatherIcon = decodeRes(R.drawable.ic_storm);
                 } else if (weatherStatus == 800) {
-                    weatherIcon = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.ic_clear);
+                    weatherIcon = decodeRes(R.drawable.ic_clear);
                 } else if (weatherStatus == 801) {
-                    weatherIcon = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.ic_light_clouds);
+                    weatherIcon = decodeRes(R.drawable.ic_light_clouds);
                 } else if (weatherStatus >= 802 && weatherStatus <= 804) {
-                    weatherIcon = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.ic_cloudy);
+                    weatherIcon = decodeRes(R.drawable.ic_cloudy);
                 } else {
                     weatherIcon = null;
                 }
@@ -413,13 +433,19 @@ public class MyWatchFace extends CanvasWatchFaceService {
                     : String.format("%d:%02d:%02d", mTime.hour, mTime.minute, mTime.second);
             canvas.drawText(text, mXOffset, mYOffset, mTextPaint);
             if(maxWeather != null) {
-                canvas.drawText("Max: " + maxWeather, mXOffset + 50, mYOffset + 50, mMaxWeatherPaint);
+                NumberFormat formatter = new DecimalFormat("00");
+                Double maxWeatherDouble = Double.parseDouble(maxWeather);
+                String maxWeatherConverted = formatter.format(maxWeatherDouble);
+                canvas.drawText("Max: " + maxWeatherConverted, mXOffset + 50, mYOffset + 50, mMaxWeatherPaint);
             } else {
                 canvas.drawText("Loading...", mXOffset + 50, mYOffset + 50, mMaxWeatherPaint);
             }
             if(minWeather != null){
-                canvas.drawText("Min: " + minWeather, mXOffset + 50, mYOffset + 80, mMinWeatherPaint);
-                canvas.drawBitmap(weatherIcon, mXOffset + 50, mYOffset + 80, mMinWeatherPaint);
+                NumberFormat formatter = new DecimalFormat("00");
+                Double minWeatherDouble = Double.parseDouble(minWeather);
+                String minWeatherConverted = formatter.format(minWeatherDouble);
+                canvas.drawText("Min: " + minWeatherConverted, mXOffset + 50, mYOffset + 80, mMinWeatherPaint);
+                canvas.drawBitmap(weatherIcon, mXOffset + 70, mYOffset + 90, mWeatherIcon);
             } else {
                 Log.v(TAG, "Min Weather is loading");
             }
