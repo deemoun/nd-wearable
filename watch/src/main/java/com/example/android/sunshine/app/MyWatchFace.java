@@ -33,6 +33,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.support.wearable.watchface.CanvasWatchFaceService;
 import android.support.wearable.watchface.WatchFaceStyle;
+import android.text.Layout;
 import android.text.format.Time;
 import android.util.Log;
 import android.view.SurfaceHolder;
@@ -170,6 +171,7 @@ public class MyWatchFace extends CanvasWatchFaceService {
 
             mWeatherIcon = new Paint();
             mWeatherIcon.setColor(resources.getColor(R.color.white));
+            mWeatherIcon.setTextAlign(Paint.Align.CENTER);
 
 
 
@@ -255,6 +257,7 @@ public class MyWatchFace extends CanvasWatchFaceService {
             Paint paint = new Paint();
             paint.setColor(textColor);
             paint.setTypeface(Typeface.SERIF);
+            paint.setTextAlign(Paint.Align.CENTER);
             paint.setAntiAlias(true);
             return paint;
         }
@@ -375,15 +378,12 @@ public class MyWatchFace extends CanvasWatchFaceService {
             return BitmapFactory.decodeResource(getApplicationContext().getResources(), resource);
         }
 
-//        private String roundDouble(){
-//
-//        }
         @Override
         public void onDraw(Canvas canvas, Rect bounds) {
 
             Bitmap weatherIcon;
 
-            // Setting up the default icon
+            // Setting up the default icon while loading
 
             weatherIcon = decodeRes(R.drawable.ic_full_sad);
 
@@ -431,21 +431,21 @@ public class MyWatchFace extends CanvasWatchFaceService {
             String text = mAmbient
                     ? String.format("%d:%02d", mTime.hour, mTime.minute)
                     : String.format("%d:%02d:%02d", mTime.hour, mTime.minute, mTime.second);
-            canvas.drawText(text, mXOffset, mYOffset, mTextPaint);
+            canvas.drawText(text, canvas.getWidth() / 2, canvas.getHeight() / 2, mTextPaint);
             if(maxWeather != null) {
                 NumberFormat formatter = new DecimalFormat("00");
                 Double maxWeatherDouble = Double.parseDouble(maxWeather);
                 String maxWeatherConverted = formatter.format(maxWeatherDouble);
-                canvas.drawText("Max: " + maxWeatherConverted, mXOffset + 50, mYOffset + 50, mMaxWeatherPaint);
+                canvas.drawText(getResources().getString(R.string.max_weather) + " " + maxWeatherConverted, canvas.getWidth() / 2, canvas.getHeight() / 2 + 30, mMaxWeatherPaint);
             } else {
-                canvas.drawText("Loading...", mXOffset + 50, mYOffset + 50, mMaxWeatherPaint);
+                canvas.drawText(getResources().getString(R.string.weather_loading), canvas.getWidth() / 2, canvas.getHeight() / 2 + 30, mMaxWeatherPaint);
             }
             if(minWeather != null){
                 NumberFormat formatter = new DecimalFormat("00");
                 Double minWeatherDouble = Double.parseDouble(minWeather);
                 String minWeatherConverted = formatter.format(minWeatherDouble);
-                canvas.drawText("Min: " + minWeatherConverted, mXOffset + 50, mYOffset + 80, mMinWeatherPaint);
-                canvas.drawBitmap(weatherIcon, mXOffset + 70, mYOffset + 90, mWeatherIcon);
+                canvas.drawText(getResources().getString(R.string.min_weather) + " " + minWeatherConverted, canvas.getWidth() / 2, canvas.getHeight() / 2 + 60, mMinWeatherPaint);
+                canvas.drawBitmap(weatherIcon, canvas.getWidth() / 2 - 20, canvas.getHeight() / 2 + 80, mWeatherIcon);
             } else {
                 Log.v(TAG, "Min Weather is loading");
             }

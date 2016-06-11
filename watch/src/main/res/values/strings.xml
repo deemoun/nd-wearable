@@ -1,4 +1,7 @@
 <resources>
     <string name="app_name">Watch</string>
     <string name="my_digital_name">Weather Watch</string>
+    <string name="max_weather">Max:</string>
+    <string name="min_weather">Min:</string>
+    <string name="weather_loading">Loading...</string>
 </resources>
