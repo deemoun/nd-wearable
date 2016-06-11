@@ -420,7 +420,8 @@ public class MyWatchFace extends CanvasWatchFaceService {
                 } else if (weatherStatus >= 802 && weatherStatus <= 804) {
                     weatherIcon = decodeRes(R.drawable.ic_cloudy);
                 } else {
-                    weatherIcon = null;
+                    // If there is an error, show ic_full_sad icon
+                    weatherIcon = decodeRes(R.drawable.ic_full_sad);
                 }
             } else {
                 Log.v(TAG, "weatherStatus is null");
