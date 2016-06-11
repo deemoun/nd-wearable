@@ -431,7 +431,7 @@ public class MyWatchFace extends CanvasWatchFaceService {
             String text = mAmbient
                     ? String.format("%d:%02d", mTime.hour, mTime.minute)
                     : String.format("%d:%02d:%02d", mTime.hour, mTime.minute, mTime.second);
-            canvas.drawText(text, canvas.getWidth() / 2, canvas.getHeight() / 2, mTextPaint);
+            canvas.drawText(text, canvas.getWidth() / 2, canvas.getHeight() / 2 + ((mTextPaint.descent() + mTextPaint.ascent()) / 2), mTextPaint);
             if(maxWeather != null) {
                 NumberFormat formatter = new DecimalFormat("00");
                 Double maxWeatherDouble = Double.parseDouble(maxWeather);
